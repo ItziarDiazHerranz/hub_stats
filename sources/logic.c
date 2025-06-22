@@ -11,13 +11,13 @@
 static void display_http_error(long code, const char *url)
 {
     if (code == 404)
-        fprintf(stderr, "❌ Error 404: Repository not found (%s)\n", url);
+        fprintf(stderr, "Error 404: Repository not found (%s)\n", url);
     else if (code == 403)
         fprintf(stderr,
-            "🚫 Error 403: Forbidden – API rate limit may be exceeded.\n");
+            "Error 403: Forbidden API rate limit may be exceeded.\n");
     else
         fprintf(stderr,
-            "⚠️ Unexpected HTTP error %ld returned by GitHub API.\n", code);
+            "Unexpected HTTP error %ld returned by GitHub API.\n", code);
 }
 
 static void handle_success_response(
@@ -25,7 +25,7 @@ static void handle_success_response(
 {
     int commit_count = fetch_commit_count(info->user, info->repo);
 
-    printf("✅ Repository found! Parsing data...\n\n");
+    printf("Repository found! Parsing data...\n\n");
     parse_and_display_json(chunk->data, commit_count);
 }
 
@@ -36,7 +36,7 @@ void handle_response(
     long http_code;
 
     if (res != CURLE_OK) {
-        fprintf(stderr, "❌ curl_easy_perform() failed: %s\n",
+        fprintf(stderr, "curl_easy_perform() failed: %s\n",
             curl_easy_strerror(res));
         return;
     }

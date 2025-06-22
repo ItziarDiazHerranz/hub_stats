@@ -9,7 +9,7 @@ def get_total_commits(username):
         commits_url = repo["commits_url"].replace("{/sha}", "")
         commits_resp = requests.get(commits_url)
         if commits_resp.status_code == 200:
-            total_commits += len(commits_resp.json())  # solo los primeros por limitación
+            total_commits += len(commits_resp.json())
     return total_commits
 
 def get_grade(commits):

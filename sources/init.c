@@ -39,7 +39,7 @@ curl_handle_t *init_curl_session(
     curl_global_init(CURL_GLOBAL_DEFAULT);
     handle = curl_easy_init();
     if (!handle) {
-        fprintf(stderr, "❌ Curl init failed\n");
+        fprintf(stderr, "Curl init failed\n");
         free(chunk->data);
         curl_global_cleanup();
         return NULL;
