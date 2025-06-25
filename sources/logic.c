@@ -5,44 +5,54 @@
 ** logic
 */
 
-#include "../include/github.h"
 #include "../include/commits.h"
+#include "../include/github.h"
 
-static void display_http_error(long code, const char *url)
+void check_json_errors(const response_data_t *chunk, json_t *root)
 {
-    if (code == 404)
-        fprintf(stderr, "Error 404: Repository not found (%s)\n", url);
-    else if (code == 403)
-        fprintf(stderr,
-            "Error 403: Forbidden API rate limit may be exceeded.\n");
-    else
-        fprintf(stderr,
-            "Unexpected HTTP error %ld returned by GitHub API.\n", code);
+    if (!chunk || !chunk->data || strlen(chunk->data) == 0) {
+        write_error("Error: Empty response from GitHub.\n");
+        exit(84);
+    }
+    if (!root) {
+        write_error("Error: Failed to parse JSON.\n");
+        exit(84);
+    }
 }
 
-static void handle_success_response(
+void handle_success_response(
     const response_data_t *chunk, const repo_info_t *info)
 {
+    json_error_t error;
+    json_t *root = json_loads(chunk->data, 0, &error);
+    json_t *message = json_object_get(root, "message");
     int commit_count = fetch_commit_count(info->user, info->repo);
+    const char *msg = json_string_value(message);
 
-    printf("Repository found! Parsing data...\n\n");
+    check_json_errors(chunk, root);
+    if (message && json_is_string(message)) {
+        if (strcmp(msg, "Not Found") == 0) {
+            json_decref(root);
+            write_error("Error: No such repository or user.\n");
+            exit(84);
+        }
+    }
     parse_and_display_json(chunk->data, commit_count);
+    json_decref(root);
 }
 
-void handle_response(
-    CURL *curl, response_data_t *chunk, const repo_info_t *info)
+size_t handle_response(void *contents, size_t size, size_t nmemb, void *userp)
 {
-    CURLcode res = curl_easy_perform(curl);
-    long http_code;
+    size_t real_size = size * nmemb;
+    response_data_t *mem = (response_data_t *) userp;
+    char *ptr;
 
-    if (res != CURLE_OK) {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n",
-            curl_easy_strerror(res));
-        return;
-    }
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-    if (http_code == 200)
-        handle_success_response(chunk, info);
-    else
-        display_http_error(http_code, info->url);
+    ptr = realloc(mem->data, mem->size + real_size + 1);
+    if (!ptr)
+        return 0;
+    mem->data = ptr;
+    memcpy(&(mem->data[mem->size]), contents, real_size);
+    mem->size += real_size;
+    mem->data[mem->size] = 0;
+    return real_size;
 }

@@ -1,1 +1,3 @@
 ./hub_stats:1: MAJOR:C-O1
+./sources/branch.c:48: MINOR:C-V1
+./sources/count.c:19: MINOR:C-V1

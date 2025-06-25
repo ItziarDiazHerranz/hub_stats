@@ -1,39 +1,31 @@
-name: Update GitHub Stats
+name: Compile and Run Hub Stats
 
 on:
-  schedule:
-    - cron: '0 12 * * *'
-  workflow_dispatch: 
+  workflow_dispatch:  # Puedes lanzarlo manualmente
 
 jobs:
-  build:
+  build-and-run:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-
-      - name: Install Python dependencies
-        run: pip install requests
-
-      - name: Run stats generator
-        run: python sources/generate_stats.py
-
-      - name: Show generated file (debug)
-        run: cat STATS.md || echo "STATS.md not found"
-
-      - name: Commit and push changes
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Install dependencies
         run: |
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
-          git add STATS.md
-          git commit -m "Update GitHub stats" || echo "No changes to commit"
-          git push
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libjansson-dev
+
+      - name: Compile the project
+        run: make
+
+      - name: Run hub_stats with test repo
+        run: |
+          ./hub_stats ItziarDiazHerranz corewar > stats_output.txt || echo "❌ Execution failed"
+          cat stats_output.txt
+
+      - name: Upload output as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-stats-output
+          path: stats_output.txt

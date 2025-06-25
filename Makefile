@@ -11,11 +11,20 @@ LDFLAGS = -lcurl -ljansson
 
 SRC = sources/main.c \
 	  sources/parser.c \
-	  sources/commits.c \
 	  sources/utils.c \
 	  sources/logic.c \
 	  sources/init.c \
-	  sources/repo.c
+	  sources/repo.c \
+	  sources/ansi_colors.c \
+	  sources/interactive.c \
+	  sources/export.c \
+	  sources/help.c \
+	  sources/fetch.c \
+	  sources/error.c \
+	  sources/display.c \
+	  sources/request.c \
+	  sources/count.c \
+	  sources/branch.c \
 
 BIN = hub_stats
 

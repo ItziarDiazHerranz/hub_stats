@@ -15,6 +15,11 @@ typedef struct response_data_s {
     size_t size;
 } response_data_t;
 
+struct memory {
+    char *memory;
+};
+
+
 int fetch_commit_count(const char *user, const char *repo);
 
 #endif

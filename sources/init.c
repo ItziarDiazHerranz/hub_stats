@@ -15,12 +15,10 @@
 int init_chunk(response_data_t *chunk)
 {
     chunk->data = malloc(1);
-    if (!chunk->data) {
-        fprintf(stderr, "❌ Memory allocation failed\n");
-        return 0;
-    }
+    if (!chunk->data)
+        return 84;
     chunk->size = 0;
-    return 1;
+    return 0;
 }
 
 void get_repo_info(int argc, char **argv, char *user, char *repo)

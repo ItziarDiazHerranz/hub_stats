@@ -6,65 +6,66 @@
 */
 
 #include <curl/curl.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include "../include/commits.h"
+#include <string.h>
+#include <unistd.h>
 #include "../include/github.h"
 
-static void cleanup_and_exit(CURL *curl, response_data_t *chunk, int code)
+static int handle_interactive_mode(char *user, char *repo)
 {
-    curl_easy_cleanup(curl);
-    free(chunk->data);
-    curl_global_cleanup();
-    exit(code);
-}
+    int commit_count;
 
-static int validate_args(int argc, char **argv)
-{
-    if (argc < 3) {
-        fprintf(stderr, "Usage: %s <user> <repo>\n", argv[0]);
-        return 0;
+    write(1, "\033[1m\033[32mEntering interactive mode...\033[0m\n", 43);
+    interactive_mode(user, repo, 256);
+    if (user[0] == '\0' || repo[0] == '\0')
+        return 84;
+    commit_count = fetch_commit_count(user, repo);
+    if (commit_count <= 0) {
+        write(2, "\033[31mError: No commits found or request failed.\033[0m\n",
+            53);
+        return 84;
     }
-    return 1;
+    fetch_and_display(user, repo, commit_count);
+    return 0;
 }
 
-static void fill_repo_info(
-    repo_info_t *info, const char *user, const char *repo, const char *url)
+static int validate_and_copy_args(
+    char *user, char *repo, int argc, char **argv)
 {
-    memset(info, 0, sizeof(repo_info_t));
-    strcpy(info->user, user);
-    strcpy(info->repo, repo);
-    strcpy(info->url, url);
+    if (argc < 3 || argc > 4) {
+        write(2, "\033[31mUsage: ./hub_stats <user> <repo> [commits]\033[0m\n",
+            52);
+        return 84;
+    }
+    strncpy(user, argv[1], 255);
+    strncpy(repo, argv[2], 255);
+    user[255] = '\0';
+    repo[255] = '\0';
+    return 0;
 }
 
-static int run_fetch(const char *user, const char *repo)
+static int handle_args(int argc, char **argv)
 {
-    curl_handle_t *curl;
-    response_data_t chunk;
-    char url[1024] = {0};
-    repo_info_t info;
+    char user[256] = {0};
+    char repo[256] = {0};
+    int commit_count;
 
-    if (!init_chunk(&chunk))
+    if (validate_and_copy_args(user, repo, argc, argv) == 84)
         return 84;
-    snprintf(
-        url, sizeof(url), "https://api.github.com/repos/%s/%s", user, repo);
-    printf("🔎 Fetching info for %s/%s...\n", user, repo);
-    fill_repo_info(&info, user, repo, url);
-    curl = init_curl_session(&chunk, url);
-    if (!curl)
+    commit_count =
+        (argc == 4) ? atoi(argv[3]) : fetch_commit_count(user, repo);
+    if (commit_count <= 0) {
+        write(2, "\033[31mError: No commits found or request failed.\033[0m\n",
+            53);
         return 84;
-    handle_response(curl, &chunk, &info);
-    cleanup_and_exit(curl, &chunk, 0);
+    }
+    fetch_and_display(user, repo, commit_count);
     return 0;
 }
 
 int main(int argc, char **argv)
 {
-    char user[256] = {0};
-    char repo[256] = {0};
-
-    if (!validate_args(argc, argv))
-        return 84;
-    get_repo_info(argc, argv, user, repo);
-    return run_fetch(user, repo);
+    if (argc == 1)
+        return handle_interactive_mode((char[256]){0}, (char[256]){0});
+    return handle_args(argc, argv);
 }
